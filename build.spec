@@ -13,7 +13,7 @@ APP_VERSION = '1.0'
 
 # Platform-specific configurations
 if sys.platform == 'win32':
-    ICON_PATH = os.path.join('icons', 'fuckingfast.ico')
+    ICON_PATH = os.path.join('icons', 'logo.ico')
 
 # List of data files to include
 data_files = []
@@ -23,7 +23,7 @@ data_files.extend(collect_data_files('qt_material'))
 
 # Application icons
 data_files.append((ICON_PATH, 'icons'))
-data_files.append((os.path.join('icons', 'logo.png'), 'icons'))
+data_files.append((os.path.join('icons', 'logo.ico'), 'icons'))
 
 # Required files
 data_files.append(('input.txt', '.'))
