@@ -151,4 +151,4 @@ pyinstaller build.spec
 
 **Disclaimer**: This tool is unofficial and not affiliated with Fucking Fast. Always verify game ownership before downloading.
 
-*Created by [Aryan Vala](https://aryanvala.site)*  
+*Created/ReProgrammed by [Aryan Vala](https://aryanvala.site) Contribution to [Ritesh Pandit](https://riteshpandit.vercel.app/)*  
