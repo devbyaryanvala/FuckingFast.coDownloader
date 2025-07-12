@@ -8,7 +8,7 @@ from PyInstaller.utils.hooks import collect_data_files
 from PyInstaller.building.build_main import PYZ, EXE, COLLECT
 
 # Application name and version
-APP_NAME = 'Test Application' # You might want to change this to 'Fucking Fast Downloader'
+APP_NAME = 'FuckingFast Downloader' # You might want to change this to 'Fucking Fast Downloader'
 APP_VERSION = '1.0'
 
 # Platform-specific configurations

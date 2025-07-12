@@ -685,30 +685,37 @@ class QListWidgetLinks(QtWidgets.QListWidget):
             self.parent().parent().clear_all_links()
 
 
-class AddLinkDialog(QtWidgets.QDialog):
+class AddLinksDialog(QtWidgets.QDialog):
     """
-    A simple dialog for adding a single download link manually.
+    A dialog for adding one or more download links manually.
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Add New Link")
-        self.setFixedSize(400, 100)
-        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint) # Remove help button
+        self.setWindowTitle("Add New Links")
+        self.resize(500, 300) # Give more space for multiple links
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         layout = QtWidgets.QVBoxLayout(self)
 
-        self.link_input = QtWidgets.QLineEdit()
-        self.link_input.setPlaceholderText("Paste your download link here...")
-        layout.addWidget(self.link_input)
+        info_label = QtWidgets.QLabel("Paste one or more download links below (one link per line).")
+        layout.addWidget(info_label)
 
-        add_button = QtWidgets.QPushButton("Add Link")
+        self.links_input = QtWidgets.QTextEdit() # Changed from QLineEdit to QTextEdit
+        self.links_input.setPlaceholderText("http://example.com/file1.zip\nhttp://example.com/file2.rar\n...")
+        layout.addWidget(self.links_input)
+
+        add_button = QtWidgets.QPushButton("Add Links")
         add_button.clicked.connect(self.accept)
         layout.addWidget(add_button)
-        
-        self.link_input.returnPressed.connect(self.accept) # Allow pressing Enter to add
 
-    def get_link(self):
-        return self.link_input.text().strip()
+    def get_links(self):
+        """
+        Returns a list of clean, non-empty links from the QTextEdit.
+        """
+        links_text = self.links_input.toPlainText()
+        # Split by newline, strip whitespace from each line, and filter out empty lines
+        links = [line.strip() for line in links_text.split('\n') if line.strip()]
+        return links
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -736,7 +743,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Zuiz Downloader")
+        self.setWindowTitle("Fuckingfast Downloader")
         self.resize(1000, 700) # Increased default size
         self.setStatusBar(QtWidgets.QStatusBar(self))  # For transient notifications
 
@@ -744,7 +751,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         try:
             # Assuming 'logo.png' is in 'icons' folder next to the script/executable
-            icon_path = os.path.join(self.base_path, "icons", "logo.png")
+            icon_path = os.path.join(self.base_path, "icons", "logo.ico")
             if os.path.exists(icon_path):
                 self.setWindowIcon(QtGui.QIcon(icon_path))
             else:
@@ -776,7 +783,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.buymecoffee_button = QtWidgets.QPushButton("Buy Me a Coffee")
         self.support_label = QtWidgets.QLabel("Check Out What I've Been Up To! 🫡")
         self.credits_label = QtWidgets.QLabel("") # Initialized empty, text set later
-        self.add_link_btn = QtWidgets.QPushButton("Add Link Manually")
+        self.add_links_btn = QtWidgets.QPushButton("Add Links")
         self.link_count_label = QtWidgets.QLabel("Total Links: 0")
         self.list_widget = QListWidgetLinks()
         self.file_label = QtWidgets.QLabel("Current File: None")
@@ -788,8 +795,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # --- Apply initial theme and load settings ---
         self.load_settings()
-        # Changed default theme to 'dark_teal.xml' for better aesthetics
-        apply_stylesheet(self.window(), theme=self.settings.get('theme', 'dark_teal.xml'))
+        # Changed default theme to 'dark_blue.xml' for better aesthetics
+        apply_stylesheet(self.window(), theme=self.settings.get('theme', 'dark_blue.xml'))
         # Call apply_custom_styles here immediately after applying the qt_material stylesheet
         self.apply_custom_styles()
 
@@ -871,7 +878,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.theme_combo.currentIndexChanged.connect(self.change_theme)
         
         # Set initial theme selection in combo box
-        current_theme_file = self.settings.get('theme', 'dark_teal.xml')
+        current_theme_file = self.settings.get('theme', 'dark_blue.xml')
         for name, file in self.THEMES.items():
             if file == current_theme_file:
                 self.theme_combo.setCurrentText(name)
@@ -932,11 +939,11 @@ class MainWindow(QtWidgets.QMainWindow):
         link_list_layout = QtWidgets.QVBoxLayout(link_list_group)
         
         link_list_header_layout = QtWidgets.QHBoxLayout()
-        self.add_link_btn.setToolTip("Add a single download link to the queue.")
+        self.add_links_btn.setToolTip("Add one or more download links to the queue.")
         if qta:
-            self.add_link_btn.setIcon(qta.icon('fa5s.plus'))
-        self.add_link_btn.clicked.connect(self.add_single_link)
-        link_list_header_layout.addWidget(self.add_link_btn)
+            self.add_links_btn.setIcon(qta.icon('fa5s.plus-square'))
+        self.add_links_btn.clicked.connect(self.add_links_manually)
+        link_list_header_layout.addWidget(self.add_links_btn)
 
         self.link_count_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.link_count_label.setStyleSheet("font-weight: bold; color: #BBBBBB; padding-right: 5px;")
@@ -997,7 +1004,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.open_downloads_btn.setCursor(Qt.PointingHandCursor)
         self.clear_log_btn.setCursor(Qt.PointingHandCursor)
         self.theme_combo.setCursor(Qt.PointingHandCursor)
-        self.add_link_btn.setCursor(Qt.PointingHandCursor)
+        self.add_links_btn.setCursor(Qt.PointingHandCursor)
 
         # Application-wide stylesheet.
         # This global stylesheet should be applied only once after qt_material
@@ -1141,7 +1148,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.resume_btn.clicked.connect(self.resume_download)
         self.stop_btn.clicked.connect(self.stop_download)
         self.open_downloads_btn.clicked.connect(self.open_downloads_folder)
-        self.add_link_btn.clicked.connect(self.add_single_link) # Connect add link button
+        self.add_links_btn.clicked.connect(self.add_links_manually) # Connect add links button
 
         self.worker = None
         self.download_queue = [] # Store links to download
@@ -1176,7 +1183,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_btn.setEnabled(False)
         self.resume_btn.setEnabled(False)
         self.stop_btn.setEnabled(False)
-        self.add_link_btn.setEnabled(True) # Enable add link when idle
+        self.add_links_btn.setEnabled(True) # Enable add link when idle
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("Idle")
         self.file_label.setText("Current File: None")
@@ -1194,7 +1201,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.pause_btn.setEnabled(True)
         self.resume_btn.setEnabled(False)  
         self.stop_btn.setEnabled(True)
-        self.add_link_btn.setEnabled(False) # Disable add link while downloading
+        self.add_links_btn.setEnabled(False) # Disable add link while downloading
 
     def update_ui_for_paused(self):
         self.pause_btn.setEnabled(False)
@@ -1208,7 +1215,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def change_theme(self, index):
         theme_name = self.theme_combo.currentText()
-        theme_file = self.THEMES.get(theme_name, "dark_teal.xml") # Updated default
+        theme_file = self.THEMES.get(theme_name, "dark_blue.xml") # Updated default
         apply_stylesheet(self.window(), theme=theme_file)
         self.settings['theme'] = theme_file # Save theme to settings
         self.save_settings()
@@ -1287,27 +1294,34 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update_link_numbers() # Re-number and update count after load
         self.update_ui_for_idle()
 
-    def add_single_link(self):
-        """Opens a dialog to add a single link manually."""
-        dialog = AddLinkDialog(self)
+    def add_links_manually(self):
+        """Opens a dialog to add one or more links manually."""
+        dialog = AddLinksDialog(self)
         if dialog.exec_() == QtWidgets.QDialog.Accepted:
-            link = dialog.get_link()
-            if link:
+            links = dialog.get_links()
+            if not links:
+                self.statusBar().showMessage("No links entered.", 2000)
+                return
+
+            added_count = 0
+            for link in links:
                 if not QUrl(link).isValid() or not QUrl(link).scheme() in ('http', 'https'):
-                    QtWidgets.QMessageBox.warning(self, "Invalid URL", "Please enter a valid HTTP or HTTPS URL.")
-                    return
-                
-                # Prevent adding duplicates
+                    self.log(f"⚠️ Skipping invalid URL: {link[:60]}...")
+                    continue  # Skip invalid URLs
+
                 if link not in self.download_queue:
                     self.list_widget.addItem(link)
                     self.download_queue.append(link)
-                    self.update_link_numbers()
-                    self._update_input_file()
-                    self.log(f"➕ Added new link: {link[:50]}...")
+                    added_count += 1
                 else:
-                    self.statusBar().showMessage("Link already in queue.", 2000)
+                    self.log(f"ℹ️ Link already in queue (skipped): {link[:60]}...")
+
+            if added_count > 0:
+                self.update_link_numbers()
+                self._update_input_file()
+                self.log(f"➕ Added {added_count} new link(s).")
             else:
-                self.statusBar().showMessage("No link entered.", 2000)
+                self.statusBar().showMessage("No new links were added (all were invalid or duplicates).", 3000)
 
     def copy_link_to_clipboard(self, item):
         link = item.text().split(". ", 1)[-1] if ". " in item.text() else item.text()
